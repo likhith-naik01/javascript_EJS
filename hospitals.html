@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospitals - Med-Connect</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Find Hospitals</h1>
+        <input id="hospitalSearchInput" type="text" placeholder="Search for a hospital or location...">
+        <button id="searchHospitalBtn">Search</button>
+        <button id="findNearestHospitalBtn">Find Nearest Hospital</button>
+    </header>
+
+    <div id="map" style="height: 400px; width: 100%;"></div>
+    
+    <ul id="hospitalList"></ul>
+
+    <footer>
+        <p>© 2024 Med-Connect. All rights reserved.</p>
+    </footer>
+
+    <!-- Include Google Maps API with Places Library -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCUYeFu3f5ASDjxn5YXwloYBHiQhI7ZwfQ&libraries=places&callback=initMap"></script>
+    <script>
+        let map, infoWindow;
+
+        function initMap() {
+            // Initialize the map centered at a default location
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: { lat: -34.397, lng: 150.644 }, // Default location
+                zoom: 12,
+            });
+
+            infoWindow = new google.maps.InfoWindow();
+
+            // Try to get the user's location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const pos = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude,
+                        };
+
+                        // Center map to user's location
+                        map.setCenter(pos);
+
+                        // Place a marker for the user's location
+                        new google.maps.Marker({
+                            position: pos,
+                            map: map,
+                            title: "You are here",
+                        });
+
+                        // Call function to find nearby hospitals and clinics
+                        findNearbyHospitals(pos);
+                    },
+                    () => {
+                        handleLocationError(true, infoWindow, map.getCenter());
+                    }
+                );
+            } else {
+                // Browser doesn't support Geolocation
+                handleLocationError(false, infoWindow, map.getCenter());
+            }
+        }
+
+        // Handle errors for geolocation
+        function handleLocationError(browserHasGeolocation, infoWindow, pos) {
+            infoWindow.setPosition(pos);
+            infoWindow.setContent(
+                browserHasGeolocation
+                    ? "Error: The Geolocation service failed."
+                    : "Error: Your browser doesn't support geolocation."
+            );
+            infoWindow.open(map);
+        }
+
+        // Function to find nearby hospitals and medical shops using Places API
+        function findNearbyHospitals(location) {
+            const request = {
+                location: location,
+                radius: '5000', // 5 km radius
+                types: ['hospital', 'clinic', 'pharmacy'], // Search for hospitals, clinics, and pharmacies
+            };
+
+            const service = new google.maps.places.PlacesService(map);
+            service.nearbySearch(request, (results, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK) {
+                    // Clear any previous results
+                    document.getElementById('hospitalList').innerHTML = '';
+
+                    // Loop through results and display them
+                    results.forEach(place => {
+                        createMarker(place);
+                        const li = document.createElement('li');
+                        li.textContent = place.name;
+                        document.getElementById('hospitalList').appendChild(li);
+                    });
+                } else {
+                    document.getElementById('hospitalList').innerHTML = '<li>No hospitals, clinics, or pharmacies found nearby.</li>';
+                }
+            });
+        }
+
+        // Create a marker for each place found
+        function createMarker(place) {
+            const marker = new google.maps.Marker({
+                map: map,
+                position: place.geometry.location,
+                title: place.name,
+            });
+        }
+
+        // Event listener for "Find Nearest Hospital" button
+        document.getElementById('findNearestHospitalBtn').addEventListener('click', () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const pos = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                    };
+
+                    map.setCenter(pos);
+                    findNearbyHospitals(pos);
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        });
+    </script>
+</body>
+</html>

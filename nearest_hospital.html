@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Nearest Hospital</title>
+</head>
+<body>
+    <h1>Find Nearest Hospital</h1>
+    <!-- Button to trigger hospital detection -->
+    <button onclick="getLocation()">Find Hospital</button>
+    <!-- Paragraph to display hospital information -->
+    <p id="hospital">Hospital Info will appear here</p>
+
+    <!-- JavaScript code goes here -->
+    <script>
+        // Function to get the user's location
+        function getLocation() {
+            document.getElementById('hospital').innerHTML = "Fetching your location...";
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition, showError);
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        // Callback function to handle successful location fetch
+        function showPosition(position) {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            findNearbyHospital(latitude, longitude);
+        }
+
+        // Function to handle geolocation errors
+        function showError(error) {
+            let message = "";
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    message = "Please enable location services in your browser settings.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    message = "Location information is unavailable.";
+                    break;
+                case error.TIMEOUT:
+                    message = "The request timed out.";
+                    break;
+                case error.UNKNOWN_ERROR:
+                    message = "An unknown error occurred.";
+                    break;
+            }
+            document.getElementById('hospital').innerHTML = message;
+        }
+
+        // Function to fetch nearby hospitals from the server
+        function findNearbyHospital(lat, lng) {
+            const url = `/find-hospital?lat=${lat}&lng=${lng}`; // API request to your backend
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const hospitals = data.results;
+                    if (hospitals.length > 0) {
+                        document.getElementById('hospital').innerHTML = `
+                            <strong>Nearest Hospital: </strong> ${hospitals[0].name} <br/>
+                            <strong>Address: </strong> ${hospitals[0].vicinity} <br/>
+                            <strong>Rating: </strong> ${hospitals[0].rating || 'N/A'}`;
+                    } else {
+                        document.getElementById('hospital').innerHTML = "No nearby hospitals found.";
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching hospital data:', error);
+                    document.getElementById('hospital').innerHTML = "Error fetching hospital data.";
+                });
+        }
+    </script>
+</body>
+</html>
